@@ -2,6 +2,7 @@ import random
 
 import numpy as np
 
+from influence.math import generalized_kron
 from influence.site import Site
 
 
@@ -21,17 +22,18 @@ class InfluenceModel(object):
         :param sites: ordered list of all n sites
         :param D: network influence matrix, an n x n stochastic matrix
         :param state_transition_matrices: a state-transition matrix A_{ij} for each pair of sites i and j
+        :raises ValueError: if any of the state-transition matrices are not dimension-compatible or not stochastic
         """
         for (i,j), A in state_transition_matrices.items():
             if not A.shape[0] == len(sites[i].s) and A.shape[1] == len(sites[j].s):
-                raise ValueError(f'state transition matrix at ({i},{j}) block must be m_i x m_j')
+                raise ValueError(f'state-transition matrix at ({i},{j}) must be m_i x m_j')
             if not all(np.isclose(1, np.sum(A, axis=1))):
                 raise ValueError(f'state-transition matrix at ({i},{j}) must be stochastic (all rows sum to 1)')
             if any(x < 0 for x in np.nditer(A)):
                 raise ValueError(f'state-transition matrix at ({i},{j}) must be stochastic (non-negative)')
 
         D_transpose = np.transpose(D)
-        H = self.generalized_kron(D_transpose, state_transition_matrices)
+        H = generalized_kron(D_transpose, state_transition_matrices)
 
         self.sites = sites
         self.H = H  # influence matrix, i.e. generalized Kronecker product of D' and {A_{ij}}
@@ -51,7 +53,7 @@ class InfluenceModel(object):
         The state vector is a column vector of length (m_i + ... + m_n) representing the status of all
         sites in the network.
 
-        :return: a copy of the state vector formed from the status vectors at each site
+        :returns: a copy of the state vector formed from the status vectors at each site
         """
         statuses = tuple(site.s for site in self.sites)
         return np.vstack(statuses).copy()
@@ -71,29 +73,3 @@ class InfluenceModel(object):
             new_status[rand_status][0] = 1
             site.s = new_status
             i += m
-
-    @staticmethod
-    def generalized_kron(A: np.ndarray, Bs: dict[tuple[int, int], np.ndarray]) -> np.ndarray:
-        """Computes the generalized Kronecker product of an m x n matrix A and p x q matrices B.
-
-        The generalized Kronecker product differs from the regular Kronecker product in that each matrix B in the
-        (i,j)th block can be different.
-
-        :param A: m x n matrix
-        :param Bs: mapping from an (i,j) block to a matrix B
-        :return: generalized Kronecker product of A and {B_{ij}}
-        """
-        arbitrary_B = next(iter(Bs.values()))  # arbitrarily select a B
-        p, q = arbitrary_B.shape
-        if not all(x.shape[0] == p and x.shape[1] == q for x in Bs.values()):
-            raise ValueError('all B matrices should be have the same # of rows and same # of columns')
-
-        m, n = A.shape
-        C = np.zeros((m * p, n * q))
-        for i in range(0, m):
-            for j in range(0, n):
-                B = Bs[(i, j)]
-                for k in range(0, p):
-                    for l in range(0, q):
-                        C[(i * p) + k, (j * q) + l] = A[i][j] * B[k][l]
-        return C

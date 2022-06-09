@@ -15,8 +15,9 @@ class Site(object):
         single 1 in the position corresponding to the present status, and 0 everywhere else:
             s'_i[k] = [0 ... 010 ... 1].
 
-        :param: label: label for the site
-        :param: s: length-m indicator vector for the status of the site
+        :param: label: a label for the site
+        :param: s: the length-m indicator vector for the status of the site
+        :raises ValueError: if the status vector s is not a column vector
         """
         if len(s.shape) < 2 or s.shape[1] != 1:
             raise ValueError('s must be a column vector')
