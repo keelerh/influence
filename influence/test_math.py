@@ -25,6 +25,19 @@ class TestGeneralizedKron(unittest.TestCase):
         Bs = {(0,0): B, (0,1): B, (1,0): B, (1,1): B}
         self.assertTrue(np.allclose(generalized_kron(A, Bs), np.kron(A, B)))
 
+    def test_2x2_by_3x3_same_B(self):
+        A = np.array([
+            [0.5, 1.],
+            [0.5, 0.],
+        ])
+        B = np.array([
+            [1.,  0.,  0. ],
+            [0.4, 0.2, 0.4],
+            [0.,  0.,  1. ],
+        ])
+        Bs = {(0,0): B, (0,1): B, (1,0): B, (1,1): B}
+        self.assertTrue(np.allclose(generalized_kron(A, Bs), np.kron(A, B)))
+
     def test_1x3_by_2x1_same_B(self):
         A = np.array([
             [1, 2, 3],

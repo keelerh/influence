@@ -17,20 +17,21 @@ class InfluenceModel(object):
         network matrix D. At the local level, every site has an internal Markov chain Γ(A) and at any given time
         is in one of the statuses of Γ(A). At time k, the status of site i is represented by a length-m status vector,
         an indicator vector containing a 1 in the position corresponding to its current status and a 0 everywhere else.
-        For each pair of sites i and j, the state-transition matrix A_{ij} is an m_i x m_j stochastic matrix.
+        For each pair of sites i and j, the state-transition matrix A_{ij} is an m_i x m_j non-negative matrix with rows
+        summing to 1.
 
         :param sites: ordered list of all n sites
         :param D: network influence matrix, an n x n stochastic matrix
         :param state_transition_matrices: a state-transition matrix A_{ij} for each pair of sites i and j
-        :raises ValueError: if any of the state-transition matrices are not dimension-compatible or not stochastic
+        :raises ValueError: if any of the state-transition matrices are malformed
         """
         for (i,j), A in state_transition_matrices.items():
             if not A.shape[0] == len(sites[i].s) and A.shape[1] == len(sites[j].s):
                 raise ValueError(f'state-transition matrix at ({i},{j}) must be m_i x m_j')
             if not all(np.isclose(1, np.sum(A, axis=1))):
-                raise ValueError(f'state-transition matrix at ({i},{j}) must be stochastic (all rows sum to 1)')
+                raise ValueError(f'state-transition matrix at ({i},{j}) must have all rows sum to 1)')
             if any(x < 0 for x in np.nditer(A)):
-                raise ValueError(f'state-transition matrix at ({i},{j}) must be stochastic (non-negative)')
+                raise ValueError(f'state-transition matrix at ({i},{j}) must be non-negative')
 
         D_transpose = np.transpose(D)
         H = generalized_kron(D_transpose, state_transition_matrices)
@@ -63,7 +64,7 @@ class InfluenceModel(object):
 
         P[k+1] is a vector stack of the p_i[k] PMF vectors that govern the status of site i at time k.
 
-        :param arr: the transpose of the probability vector p
+        :param p_transpose: the transpose of the probability vector p
         """
         i = 0
         for site in self.sites:
