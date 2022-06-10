@@ -7,7 +7,19 @@ from influence.site import Site
 
 
 class InfluenceModel(object):
-    """The ``InfluenceModel`` is a networked, discrete time stochastic model.
+    """The ``InfluenceModel`` is discrete-time, dynamic model composed of a network of n interacting nodes (or sites).
+
+    Site i assumes one of a finite number of possible statuses at each discrete-time instant. At time k, the status of
+    site i is represented by a length-m status vector s, an indicator vector containing a single 1 in the position
+    corresponding to the present status, and 0 everywhere else:
+        s'_i[k] = [0 ... 010 ... 1].
+
+    Updating the status of the ith site in the influence model takes place in three stages:
+        (1) Site i randomly selects one of its neighboring sites to be its determining site; site j is selected with
+            probability d_{ij}.
+        (2) The status of the site j at time k, s_j[k], fixes the probability vector p_i[k+1] that is used in (3) to
+            randomly select the next status of site i.
+        (3) The next status s_i[k+1] is realized according to p_i[k+1].
     """
 
     def __init__(self, sites: list[Site], D: np.ndarray, state_transition_matrices: dict[tuple[int, int], np.ndarray]):
