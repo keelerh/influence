@@ -9,7 +9,7 @@ def generalized_kron(A: np.ndarray, Bs: dict[tuple[int, int], np.ndarray]) -> np
 
     :param A: m x n matrix
     :param Bs: mapping from an (i,j) block to a matrix B
-    :returns: generalized Kronecker product of A and {B_{ij}}
+    :return: generalized Kronecker product of A and {B_{ij}}
     :raises ValueError: if all B matrices do not have the same number of rows and columns as one another
     """
     arbitrary_B = next(iter(Bs.values()))  # arbitrarily select a B

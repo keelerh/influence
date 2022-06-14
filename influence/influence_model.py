@@ -73,7 +73,7 @@ class InfluenceModel(object):
         The state vector is a column vector of length (m_i + ... + m_n) representing the status of all
         sites in the network.
 
-        :returns: a copy of the state vector formed from the status vectors at each site
+        :return: a copy of the state vector formed from the status vectors at each site
         """
         statuses = tuple(site.s for site in self.sites)
         return np.vstack(statuses).copy()
