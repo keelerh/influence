@@ -37,6 +37,13 @@ class InfluenceModel(object):
         :param state_transition_matrices: a state-transition matrix A_{ij} for each pair of sites i and j
         :raises ValueError: if any of the state-transition matrices are malformed
         """
+        if not D.shape[0] == D.shape[1]:
+            raise ValueError('network matrix must be n x n')
+        if not all(np.isclose(1, np.sum(D, axis=1))):
+            raise ValueError('network matrix must be stochastic (all rows sum to 1)')
+        if any(x < 0 for x in np.nditer(D)):
+            raise ValueError('network matrix must be stochastic (non-negative)')
+
         for (i,j), A in state_transition_matrices.items():
             if not A.shape[0] == len(sites[i].s) and A.shape[1] == len(sites[j].s):
                 raise ValueError(f'state-transition matrix at ({i},{j}) must be m_i x m_j')
