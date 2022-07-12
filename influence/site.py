@@ -1,5 +1,6 @@
 import numpy as np
 
+
 class Site(object):
     """The ``Site`` class is a representation of a node at the network level.
     """
