@@ -3,10 +3,10 @@
 The `influence` library implements the generalized "Influence Model" proposed in Asavathiratham's 2001 PhD thesis.
 
 As a basic example, we define two sites (nodes) in the network: a leader and a follower. The follower meticulously
-follows the behavior of the leader. Both sites have two possible statuses, `0`, or `1`, represented by indicator
+follows the behavior of the leader. Both sites have two possible statuses, `0` or `1`, represented by indicator
 vectors. We also define a network matrix $D$ and a state-transition matrix $A$ to instantiate the influence model.
 
-```console
+```python
 >> import numpy as np
 >>
 >> from influence.influence_model import InfluenceModel
@@ -31,7 +31,7 @@ vectors. We also define a network matrix $D$ and a state-transition matrix $A$ t
 
 The initial state of the network is simply a vector stack of the initial statuses of the two sites.
 
-```console
+```python
 [[1]
  [0]
  [0]
@@ -40,7 +40,7 @@ The initial state of the network is simply a vector stack of the initial statuse
 
 Now, we apply the evolution equations of the influence model to progress to the next state of the network.
 
-```console
+```python
 >> next(model)
 >> next_state = model.get_state_vector()
 >> print(next_state)
@@ -48,7 +48,7 @@ Now, we apply the evolution equations of the influence model to progress to the 
 
 We see that the follower has adapted the previous status of the leader.
 
-```console
+```python
 [[0]
  [1]
  [1]
@@ -57,13 +57,13 @@ We see that the follower has adapted the previous status of the leader.
 
 This following behavior continues through subsequent iterations.
 
-```console
+```python
 >> next(model)
 >> next_state = model.get_state_vector()
 >> print(next_state)
 ```
 
-```console
+```python
 [[1]
  [0]
  [0]
