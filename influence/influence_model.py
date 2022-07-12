@@ -22,7 +22,7 @@ class InfluenceModel(object):
         (3) The next status s_i[k+1] is realized according to p_i[k+1].
     """
 
-    def __init__(self, sites: list[Site], D: np.ndarray, state_transition_matrices: dict[tuple[int, int], np.ndarray]):
+    def __init__(self, sites: list[Site], D: np.ndarray, A: np.ndarray):
         """Initializes an ``InfluenceModel`` with sites, a network influence matrix, and state transition matrices.
 
         At the network level, nodes are referred to as sites and their connections are described by the stochastic
@@ -32,10 +32,10 @@ class InfluenceModel(object):
         For each pair of sites i and j, the state-transition matrix A_{ij} is an m_i x m_j non-negative matrix with rows
         summing to 1.
 
-        :param sites: ordered list of all n sites
-        :param D: network influence matrix, an n x n stochastic matrix
-        :param state_transition_matrices: a state-transition matrix A_{ij} for each pair of sites i and j
-        :raises ValueError: if any of the state-transition matrices are malformed
+        :param sites: an ordered list of all n sites
+        :param D: the network influence matrix, an n x n stochastic matrix
+        :param A: state-transition matrix with the (i,j)th block representing probabilities for a pair of sites i and j
+        :raises ValueError: if either the network matrix or the state-transition matrix is malformed
         """
         if not D.shape[0] == D.shape[1]:
             raise ValueError('network matrix must be n x n')
@@ -43,17 +43,15 @@ class InfluenceModel(object):
             raise ValueError('network matrix must be stochastic (all rows sum to 1)')
         if any(x < 0 for x in np.nditer(D)):
             raise ValueError('network matrix must be stochastic (non-negative)')
-
-        for (i,j), A in state_transition_matrices.items():
-            if not A.shape[0] == len(sites[i].s) and A.shape[1] == len(sites[j].s):
-                raise ValueError(f'state-transition matrix at ({i},{j}) must be m_i x m_j')
-            if not all(np.isclose(1, np.sum(A, axis=1))):
-                raise ValueError(f'state-transition matrix at ({i},{j}) must have all rows sum to 1)')
-            if any(x < 0 for x in np.nditer(A)):
-                raise ValueError(f'state-transition matrix at ({i},{j}) must be non-negative')
+        if any(x < 0 for x in np.nditer(A)):
+            raise ValueError('state-transition matrix must be non-negative')
+        if not self._all_rows_sum_to_one(sites, A):
+            raise ValueError(f'all rows must sum to 1 for the state-transition matrix at each (i,j)th block')
 
         D_transpose = np.transpose(D)
-        H = generalized_kron(D_transpose, state_transition_matrices)
+        m = int(A.shape[0] / len(sites))
+        n = int(A.shape[1] / len(sites))
+        H = generalized_kron(D_transpose, A, m, n)
 
         self.sites = sites
         self.H = H  # influence matrix, i.e. generalized Kronecker product of D' and {A_{ij}}
@@ -88,8 +86,29 @@ class InfluenceModel(object):
         i = 0
         for site in self.sites:
             m = site.s.shape[0]
-            rand_status = random.choices(range(m), p_transpose[0][i:i+m], k=1)[0]
-            new_status = np.zeros((m,1))
+            rand_status = random.choices(range(m), p_transpose[0][i:i + m], k=1)[0]
+            new_status = np.zeros((m, 1), dtype=int)
             new_status[rand_status][0] = 1
             site.s = new_status
             i += m
+
+    @staticmethod
+    def _all_rows_sum_to_one(sites: list[Site], A: np.ndarray) -> bool:
+        """Validates that all rows in the sub-matrices of the state-influence matrix sum to one.
+
+        :param sites: a list of all sites in the network
+        :param sites: state-transition matrix
+        :return: True if all rows in the sub-matrices sum to one, else False
+        """
+        m, n = 0, 0
+        for site_i in sites:
+            m_i = site_i.s.shape[0]
+            for site_j in sites:
+                m_j = site_j.s.shape[0]
+                A_ij = A[m:m + m_i, n:n + m_j]
+                if not all(np.isclose(1, np.sum(A_ij, axis=1))):
+                    return False
+                n += m_j
+            m += m_i
+            n = 0
+        return True

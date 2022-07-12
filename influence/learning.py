@@ -33,11 +33,13 @@ def learn_state_transition_matrix(
     return A
 
 
-def learn_network_influence_matrix(observations: np.ndarray, state_transition_matrices: dict) -> np.ndarray:
+def learn_network_influence_matrix(observations: dict, A: np.ndarray, num_rows: int, num_cols: int) -> np.ndarray:
     """Learns the network influence matrix D using constrained gradient ascent with full 1-D search.
 
-    :param observations: a sequence of observations for each site in the network
-    :param state_transition_matrices: a state-transition matrix A_{ij} for each (i,j) block
+    :param observations: a mapping from sites to observations
+    :param A: state-transition matrix with the (i,j)th block representing probabilities for a pair of sites i and j
+    :param num_rows: number of rows in each sub-matrix of A
+    :param num_cols: number of columns in each sub-matrix of A
     :return: the network influence matrix D
     """
     def _f(x, P, B):
@@ -46,14 +48,14 @@ def learn_network_influence_matrix(observations: np.ndarray, state_transition_ma
             return 0
         return -1 * sum(P / inner_prod)
 
-    n = len(observations)
-    D = np.zeros((n,n))
-    for i in range(n):
-        for j in range(n):
-            A_ji = state_transition_matrices[(j,i)]
+    num_sites = len(observations)
+    D = np.zeros((num_sites, num_sites))
+    for i in range(num_sites):
+        for j in range(num_sites):
+            A_ji = A[j * num_rows:(j * num_rows) + num_rows, i * num_cols:(i * num_cols) + num_cols]
             # P(s_i[k]|s_j[k-1])
             P = np.array([A_ji[observations[j][k]][s] for (k,s) in enumerate(observations[i][:1])])
-            A_ii = state_transition_matrices[(i,i)]
+            A_ii = A[i * num_rows:(i * num_rows) + num_rows, i * num_cols:(i * num_cols) + num_cols]
             # B' = P(s_i[k]|s_i[0] ... s_i[k]|s_i[N])
             B = np.array([A_ii[observations[i][k]][s] for (k,s) in enumerate(observations[j][:1])])
             result = optimize.minimize_scalar(_f, args=(P,B), method='bounded', bounds=(0,1))
